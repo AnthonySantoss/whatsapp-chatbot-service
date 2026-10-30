@@ -1,0 +1,69 @@
+services:
+  whatsapp-chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatsapp-chatbot-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - PRIMARY_POINT_API_URL=http://agendador-dev-api-1:3000/api/v1/integrations/whatsapp
+      - PRIMARY_POINT_SERVICE_TOKEN=local-dev-bot-token-2026
+      - EVOLUTION_API_URL=http://evolution-api:8086
+      - EVOLUTION_API_KEY=evolution-local-secret-2026
+      - EVOLUTION_INSTANCE_NAME=nassauBot
+      - LOG_LEVEL=info
+    networks:
+      - agendador-dev_default
+    depends_on:
+      - evolution-api
+
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: whatsapp-evolution-api
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8086
+      - SERVER_URL=http://localhost:8086
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=evolution-local-secret-2026
+      - LOG_LEVEL=ERROR,WARN,INFO
+      - LOG_COLOR=true
+      - CACHE_REDIS_ENABLED=false
+      - CACHE_LOCAL_ENABLED=true
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://agendador:agendador@postgres:5432/evolution?sslmode=disable
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - STORE_MESSAGES=true
+      - STORE_MESSAGE_UP=true
+      - STORE_CONTACTS=true
+      - STORE_CHATS=true
+      - CLEAN_STORE_CLEANING_INTERVAL=7200
+      - CLEAN_STORE_MESSAGES=true
+      - WEBHOOK_GLOBAL_ENABLED=true
+      - WEBHOOK_GLOBAL_URL=http://whatsapp-chatbot:3001/webhook/evolution
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=false
+      - WEBHOOK_EVENTS_MESSAGES_UPSERT=true
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - agendador-dev_default
+
+volumes:
+  evolution_instances:
+
+networks:
+  agendador-dev_default:
+    external: true
